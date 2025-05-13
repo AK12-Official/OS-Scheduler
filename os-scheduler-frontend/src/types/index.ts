@@ -7,10 +7,10 @@ export interface ProcessInfo {
 
 interface Response {
     code: number,
-    msg: string,
+    message: string,
 }
 
-interface Process {
+export interface Process {
     name: string,
     pid: number,
     requiredTime: number,
@@ -50,3 +50,24 @@ export interface SystemStatusResponse extends Response {
 export interface createProcessResponse extends Response {
     data: Process
 }
+
+export interface ScheduleResponse extends Response {
+    data: {
+        ready: Process[],
+        running: Process[],
+        waiting: Process[],
+        backup: Process[],
+        suspended: Process[]
+    }
+}
+
+export interface SuspendAndResumeResponse extends Response {
+    data: null
+}
+
+export interface ProcessorResponse extends Response {
+    data: {
+        processors: (Process | null)[]
+    }
+}
+

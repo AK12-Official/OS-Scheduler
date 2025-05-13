@@ -17,7 +17,7 @@ request.interceptors.response.use((response) => {
     //成功回调
 
     //简化数据
-    return response.data
+    return response.data;
 }, (error) => {
     //失败回调:处理http网络错误
 
