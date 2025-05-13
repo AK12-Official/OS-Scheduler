@@ -6,9 +6,10 @@
         </div>
         <div class="button-container">
             <el-button type="primary" size="large" @click="showCreateDialog()">新建进程</el-button>
-            <el-button type="primary" size="large">新建随机进程</el-button>
+            <el-button type="primary" size="large" @click="createRandomProcess()">新建随机进程</el-button>
             <el-button type="primary" size="large" @click="SingleMove()">单步执行</el-button>
-            <el-button type="primary" size="large">自动执行</el-button>
+            <el-button v-if="!AUTO" type="primary" size="large" @click="AutoMove()">自动执行</el-button>
+            <el-button v-else type="danger" size="large" @click="AutoMove()">停止执行</el-button>
             <el-button type="danger" size="large" @click="reset()">重置系统</el-button>
         </div>
     </el-card>
@@ -44,12 +45,14 @@
 
 <script lang="ts" setup>
 import useSystemStatusStore from '@/store/modules/SystemStatus';
-import { ref } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 
 const systemStatusStore = useSystemStatusStore();
 const dialogVisible = ref(false);
 const formRef = ref<FormInstance>();
+const AUTO = ref(false);
+let timer: ReturnType<typeof setInterval> | null = null;  // 添加计时器变量
 
 const newProcess = ref<{
     name: string;
@@ -186,7 +189,69 @@ const reset = async () => {
 };
 
 const SingleMove = async () => {
-    await systemStatusStore.Schedule();
+    await systemStatusStore.AutoSchedule();
+};
+
+const AutoMove = () => {
+    AUTO.value = !AUTO.value;
+    ElMessage({
+        message: AUTO.value ? '自动执行已开启' : '自动执行已停止',
+        type: AUTO.value ? 'success' : 'warning',
+        duration: 1000,
+    });
+};
+
+// 监听 AUTO 的变化
+watch(AUTO, (newValue) => {
+    if (newValue) {
+        // 开始自动调度
+        timer = setInterval(async () => {
+            await systemStatusStore.AutoSchedule();
+        }, 1000);
+    } else {
+        // 停止自动调度
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+    }
+});
+
+onUnmounted(() => {
+    if (timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+});
+
+const createRandomProcess = async () => {
+    try {
+        // 随机生成进程名称
+        const randomName = `P${Math.floor(Math.random() * 1000)}`;
+
+        // 随机生成所需时间片 (范围：10-30)
+        const randomTime = Math.floor(Math.random() * 20) + 10;
+
+        // 随机生成优先级 (范围：10-20)
+        const randomPriority = Math.floor(Math.random() * 10) + 10;
+
+        // 随机生成内存大小 (范围：50-200)
+        const randomMemorySize = Math.floor(Math.random() * 151) + 50;
+
+        const randomProcess = {
+            name: randomName,
+            requiredTime: randomTime,
+            priority: randomPriority,
+            memorySize: randomMemorySize,
+            predecessors: null,
+            successors: null
+        };
+        // 直接调用 store 的创建方法
+        await systemStatusStore.createNewProcess(randomProcess);
+    } catch (error) {
+        console.error('创建随机进程失败:', error);
+        ElMessage.error('创建随机进程失败');
+    }
 };
 </script>
 

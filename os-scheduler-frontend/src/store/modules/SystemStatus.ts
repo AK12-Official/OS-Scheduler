@@ -72,6 +72,19 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
         }
     }
 
+    const AutoSchedule = async () => {
+        const res = await singleSchedule();
+        if (res.code === 0) {
+            SystemStatus.value = {
+                ...SystemStatus.value,
+                ...res.data
+            };
+            time.value++;
+            await getSystemStatus();
+            await getProcessor();
+        }
+    }
+
     const Suspend = async (pid: number) => {
         const res = await suspendProcess(pid);
         if (res.code === 0) {
@@ -132,6 +145,7 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
         getSystemStatus,
         createNewProcess,
         Schedule,
+        AutoSchedule,
         Suspend,
         Resume,
         getProcessor,
