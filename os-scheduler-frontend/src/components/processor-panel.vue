@@ -69,7 +69,7 @@ const currentCPUProcess = computed(() => {
 }
 
 .ProcessPanel {
-    width: 25vw;
+    width: 40vw;
     height: 10vh;
 }
 

@@ -1,13 +1,14 @@
 <template>
-
   <controlPanel></controlPanel>
   <processorPanel></processorPanel>
+  <queuePanel></queuePanel>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import controlPanel from './components/control-panel.vue';
 import processorPanel from './components/processor-panel.vue';
+import queuePanel from './components/queue-panel.vue';
 import useSystemStatusStore from '@/store/modules/SystemStatus';
 
 

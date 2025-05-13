@@ -36,15 +36,65 @@ func (s *Scheduler) AddProcess(process *models.PCB) {
 
 	process.PID = s.nextPID
 	s.nextPID++
-	process.State = models.Ready
-	process.ProcessorID = -1
 
-	if len(s.Queue.Ready)+len(s.Queue.Running) < s.MaxProcesses {
-		s.Queue.Ready = append(s.Queue.Ready, process)
-		s.sortReadyQueue()
-	} else {
-		s.Queue.Backup = append(s.Queue.Backup, process)
+	// 更新前驱进程的后继列表
+	for _, predPID := range process.Predecessors {
+		// 在所有队列中查找前驱进程
+		found := false
+		// 检查就绪队列
+		for _, p := range s.Queue.Ready {
+			if p.PID == predPID {
+				p.Successors = append(p.Successors, process.PID)
+				found = true
+				break
+			}
+		}
+		if !found {
+			// 检查运行队列
+			for _, p := range s.Queue.Running {
+				if p.PID == predPID {
+					p.Successors = append(p.Successors, process.PID)
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			// 检查等待队列
+			for _, p := range s.Queue.Waiting {
+				if p.PID == predPID {
+					p.Successors = append(p.Successors, process.PID)
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			// 检查后备队列
+			for _, p := range s.Queue.Backup {
+				if p.PID == predPID {
+					p.Successors = append(p.Successors, process.PID)
+					found = true
+					break
+				}
+			}
+		}
 	}
+
+	// 检查前驱进程是否都已完成
+	if len(process.Predecessors) > 0 {
+		process.State = models.Waiting
+		s.Queue.Waiting = append(s.Queue.Waiting, process)
+	} else {
+		process.State = models.Ready
+		if len(s.Queue.Ready)+len(s.Queue.Running) < s.MaxProcesses {
+			s.Queue.Ready = append(s.Queue.Ready, process)
+			s.sortReadyQueue()
+		} else {
+			s.Queue.Backup = append(s.Queue.Backup, process)
+		}
+	}
+	process.ProcessorID = -1
 }
 
 func (s *Scheduler) Schedule() {
@@ -55,11 +105,14 @@ func (s *Scheduler) Schedule() {
 	for _, p := range s.Queue.Running {
 		p.Priority--
 		p.RequiredTime--
-		
+
 		if p.RequiredTime <= 0 {
 			// 进程完成，移出运行队列
 			s.removeFromRunning(p)
 			p.State = models.Finished
+
+			// 检查是否有等待此进程完成的其他进程
+			s.checkWaitingProcesses(p.PID)
 		} else {
 			// 进程未完成，放回就绪队列以便重新参与调度
 			s.removeFromRunning(p)
@@ -84,10 +137,72 @@ func (s *Scheduler) Schedule() {
 	}
 
 	// 4. 从后备队列调入新进程
-	for len(s.Queue.Ready) + len(s.Queue.Running) < s.MaxProcesses && len(s.Queue.Backup) > 0 {
+	for len(s.Queue.Ready)+len(s.Queue.Running) < s.MaxProcesses && len(s.Queue.Backup) > 0 {
 		process := s.Queue.Backup[0]
 		s.Queue.Backup = s.Queue.Backup[1:]
 		s.Queue.Ready = append(s.Queue.Ready, process)
+		s.sortReadyQueue()
+	}
+}
+
+// 检查等待队列中的进程是否可以就绪
+func (s *Scheduler) checkWaitingProcesses(finishedPID int) {
+	var readyProcesses []*models.PCB
+	remainingWaiting := make([]*models.PCB, 0)
+
+	// 遍历等待队列中的所有进程
+	for _, p := range s.Queue.Waiting {
+		canReady := true
+		// 检查该进程的所有前驱是否都已完成
+		for _, predPID := range p.Predecessors {
+			found := false
+			// 在所有队列中查找前驱进程
+			for _, rp := range s.Queue.Running {
+				if rp.PID == predPID {
+					found = true
+					break
+				}
+			}
+			for _, rp := range s.Queue.Ready {
+				if rp.PID == predPID {
+					found = true
+					break
+				}
+			}
+			for _, rp := range s.Queue.Waiting {
+				if rp.PID == predPID {
+					found = true
+					break
+				}
+			}
+			// 如果找到任何一个前驱进程还在运行，则该进程不能就绪
+			if found {
+				canReady = false
+				break
+			}
+		}
+
+		if canReady {
+			p.State = models.Ready
+			readyProcesses = append(readyProcesses, p)
+		} else {
+			remainingWaiting = append(remainingWaiting, p)
+		}
+	}
+
+	// 更新等待队列
+	s.Queue.Waiting = remainingWaiting
+
+	// 将可以就绪的进程添加到就绪队列或后备队列
+	for _, p := range readyProcesses {
+		if len(s.Queue.Ready)+len(s.Queue.Running) < s.MaxProcesses {
+			s.Queue.Ready = append(s.Queue.Ready, p)
+		} else {
+			s.Queue.Backup = append(s.Queue.Backup, p)
+		}
+	}
+
+	if len(readyProcesses) > 0 {
 		s.sortReadyQueue()
 	}
 }

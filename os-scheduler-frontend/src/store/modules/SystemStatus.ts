@@ -1,14 +1,30 @@
 import { defineStore } from 'pinia'
-import { getStatus, createProcess, singleSchedule, suspendProcess, resumeProcess, getProcessorStatus } from '@/api/index';
+import { getStatus, createProcess, singleSchedule, suspendProcess, resumeProcess, getProcessorStatus, resetSystem } from '@/api/index';
 import { ref } from 'vue';
 import { ElMessage, ElNotification } from 'element-plus';
 import type { Process, ProcessInfo } from '@/types';
 
 const useSystemStatusStore = defineStore('SystemStatus', () => {
-    const SystemStatus = ref({})
+    const SystemStatus = ref({
+        queue: {
+            ready: [] as Process[],
+            running: [] as Process[],
+            waiting: [] as Process[],
+            backup: [] as Process[],
+            suspended: [] as Process[]
+        },
+        memory: {
+            totalSize: 0,
+            osSize: 0,
+            blocks: [] as {
+                start: number,
+                length: number,
+                isUsed: boolean
+            }[]
+        }
+    });
     const time = ref(0);
-    const ProcessorsStatus = ref<(Process | null)[]>([]);
-
+    const ProcessorsStatus = ref<(Process | null)[]>([null, null]);
 
     const getSystemStatus = async () => {
         const res = await getStatus();
@@ -33,6 +49,8 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
                 message: res.message || '创建进程失败'
             })
         }
+
+
     };
 
     const Schedule = async () => {
@@ -92,6 +110,20 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
         }
     }
 
+    const reset = async () => {
+        const res = await resetSystem();
+        if (res.code === 0) {
+            ElMessage.success(res.message)
+            await getSystemStatus();
+            time.value = 0;
+        } else {
+            ElNotification({
+                type: 'error',
+                message: res.message || '重置系统失败'
+            })
+        }
+    }
+
     return {
         SystemStatus,
         time,
@@ -101,8 +133,10 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
         Schedule,
         Suspend,
         Resume,
-        getProcessor
+        getProcessor,
+        reset
     }
 })
 
 export default useSystemStatusStore;
+

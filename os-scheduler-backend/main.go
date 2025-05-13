@@ -66,7 +66,8 @@ func main() {
 	r.POST("/schedule", runSchedule)
 	r.POST("/suspend/:pid", suspendProcess)
 	r.POST("/resume/:pid", resumeProcess)
-	r.GET("/processor-status", getProcessorStatus)  // 添加新路由
+	r.GET("/processor-status", getProcessorStatus)
+	r.POST("/reset", resetSystem)  // 添加重置系统的路由
 
 	// 添加 swagger 路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -220,5 +221,22 @@ func getProcessorStatus(c *gin.Context) {
         Data: ProcessorStatusResponse{
             Processors: processors,
         },
+    })
+}
+
+// @Summary 重置系统
+// @Description 强制重启整个系统，清空所有进程和内存
+// @Produce json
+// @Success 200 {object} Response
+// @Router /reset [post]
+func resetSystem(c *gin.Context) {
+    // 重新初始化调度器和内存管理器
+    scheduler = services.NewScheduler(scheduler.ProcessorCount, scheduler.MaxProcesses)
+    memoryManager = services.NewMemoryManager(4096, 128)
+
+    c.JSON(http.StatusOK, Response{
+        Code:    0,
+        Message: "系统已重置",
+        Data:    nil,
     })
 }
