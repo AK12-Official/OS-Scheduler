@@ -189,7 +189,7 @@ const reset = async () => {
 };
 
 const SingleMove = async () => {
-    await systemStatusStore.AutoSchedule();
+    await systemStatusStore.Schedule();
 };
 
 const AutoMove = () => {
