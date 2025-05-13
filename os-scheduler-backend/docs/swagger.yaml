@@ -1,0 +1,192 @@
+basePath: /
+definitions:
+  main.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  main.StatusResponse:
+    properties:
+      memory:
+        $ref: '#/definitions/models.MemoryManager'
+      queue:
+        $ref: '#/definitions/models.ProcessQueue'
+    type: object
+  models.MemoryBlock:
+    properties:
+      isUsed:
+        type: boolean
+      length:
+        type: integer
+      start:
+        type: integer
+    type: object
+  models.MemoryManager:
+    properties:
+      blocks:
+        items:
+          $ref: '#/definitions/models.MemoryBlock'
+        type: array
+      osSize:
+        type: integer
+      totalSize:
+        type: integer
+    type: object
+  models.PCB:
+    properties:
+      memorySize:
+        type: integer
+      memoryStart:
+        type: integer
+      name:
+        type: string
+      pid:
+        type: integer
+      predecessors:
+        description: 前驱进程PID列表
+        items:
+          type: integer
+        type: array
+      priority:
+        type: integer
+      processorId:
+        description: -1表示未分配处理机
+        type: integer
+      requiredTime:
+        type: integer
+      state:
+        $ref: '#/definitions/models.ProcessState'
+      successors:
+        description: 后继进程PID列表
+        items:
+          type: integer
+        type: array
+    type: object
+  models.ProcessQueue:
+    properties:
+      backup:
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+      ready:
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+      running:
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+      suspended:
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+      waiting:
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+    type: object
+  models.ProcessState:
+    enum:
+    - ready
+    - running
+    - waiting
+    - finished
+    - suspended
+    type: string
+    x-enum-varnames:
+    - Ready
+    - Running
+    - Waiting
+    - Finished
+    - Suspended
+host: localhost:8080
+info:
+  contact: {}
+  description: 这是一个操作系统调度实验的后端API服务
+  title: 操作系统调度器 API
+  version: "1.0"
+paths:
+  /process:
+    post:
+      consumes:
+      - application/json
+      description: 添加一个新的进程到系统中
+      parameters:
+      - description: 进程信息
+        in: body
+        name: process
+        required: true
+        schema:
+          $ref: '#/definitions/models.PCB'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PCB'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.Response'
+      summary: 添加新进程
+  /resume/{pid}:
+    post:
+      description: 恢复指定的挂起进程
+      parameters:
+      - description: 进程ID
+        in: path
+        name: pid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Response'
+      summary: 恢复进程
+  /schedule:
+    post:
+      description: 执行一次进程调度
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProcessQueue'
+      summary: 执行调度
+  /status:
+    get:
+      description: 获取当前系统中的进程队列和内存状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.StatusResponse'
+      summary: 获取系统状态
+  /suspend/{pid}:
+    post:
+      description: 将指定进程挂起
+      parameters:
+      - description: 进程ID
+        in: path
+        name: pid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Response'
+      summary: 挂起进程
+swagger: "2.0"

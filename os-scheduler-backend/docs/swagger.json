@@ -1,0 +1,288 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "这是一个操作系统调度实验的后端API服务",
+        "title": "操作系统调度器 API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/process": {
+            "post": {
+                "description": "添加一个新的进程到系统中",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "添加新进程",
+                "parameters": [
+                    {
+                        "description": "进程信息",
+                        "name": "process",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PCB"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.PCB"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/resume/{pid}": {
+            "post": {
+                "description": "恢复指定的挂起进程",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "恢复进程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "进程ID",
+                        "name": "pid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule": {
+            "post": {
+                "description": "执行一次进程调度",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "执行调度",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ProcessQueue"
+                        }
+                    }
+                }
+            }
+        },
+        "/status": {
+            "get": {
+                "description": "获取当前系统中的进程队列和内存状态",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "获取系统状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.StatusResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/suspend/{pid}": {
+            "post": {
+                "description": "将指定进程挂起",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "挂起进程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "进程ID",
+                        "name": "pid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "main.Response": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "memory": {
+                    "$ref": "#/definitions/models.MemoryManager"
+                },
+                "queue": {
+                    "$ref": "#/definitions/models.ProcessQueue"
+                }
+            }
+        },
+        "models.MemoryBlock": {
+            "type": "object",
+            "properties": {
+                "isUsed": {
+                    "type": "boolean"
+                },
+                "length": {
+                    "type": "integer"
+                },
+                "start": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.MemoryManager": {
+            "type": "object",
+            "properties": {
+                "blocks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MemoryBlock"
+                    }
+                },
+                "osSize": {
+                    "type": "integer"
+                },
+                "totalSize": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PCB": {
+            "type": "object",
+            "properties": {
+                "memorySize": {
+                    "type": "integer"
+                },
+                "memoryStart": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pid": {
+                    "type": "integer"
+                },
+                "predecessors": {
+                    "description": "前驱进程PID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "processorId": {
+                    "description": "-1表示未分配处理机",
+                    "type": "integer"
+                },
+                "requiredTime": {
+                    "type": "integer"
+                },
+                "state": {
+                    "$ref": "#/definitions/models.ProcessState"
+                },
+                "successors": {
+                    "description": "后继进程PID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "models.ProcessQueue": {
+            "type": "object",
+            "properties": {
+                "backup": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PCB"
+                    }
+                },
+                "ready": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PCB"
+                    }
+                },
+                "running": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PCB"
+                    }
+                },
+                "suspended": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PCB"
+                    }
+                },
+                "waiting": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PCB"
+                    }
+                }
+            }
+        },
+        "models.ProcessState": {
+            "type": "string",
+            "enum": [
+                "ready",
+                "running",
+                "waiting",
+                "finished",
+                "suspended"
+            ],
+            "x-enum-varnames": [
+                "Ready",
+                "Running",
+                "Waiting",
+                "Finished",
+                "Suspended"
+            ]
+        }
+    }
+}
