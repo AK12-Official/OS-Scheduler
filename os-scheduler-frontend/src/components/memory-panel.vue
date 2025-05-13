@@ -4,7 +4,8 @@
             <span>内存使用情况</span>
             <div class="memory-info">
                 <span>总大小: {{ systemStatusStore.SystemStatus.memory.totalSize }}KB</span>
-                <span>系统占用: {{ systemStatusStore.SystemStatus.memory.osSize }}KB</span>
+                <span>已使用: {{ usedMemory }}KB</span>
+                <span>使用率: {{ useRate }}</span>
             </div>
         </div>
         <div class="memory-blocks">
@@ -35,13 +36,33 @@
 
 <script lang="ts" setup>
 import useSystemStatusStore from '@/store/modules/SystemStatus';
+import { computed } from 'vue';
 
 const systemStatusStore = useSystemStatusStore();
+
+// 计算已使用的内存
+const usedMemory = computed(() => {
+    // 系统占用的内存
+    const osMemory = systemStatusStore.SystemStatus.memory.osSize;
+    // 计算其他已使用的内存块总和
+    const usedBlocksMemory = systemStatusStore.SystemStatus.memory.blocks
+        .filter(block => block.isUsed)
+        .reduce((sum, block) => sum + block.length, 0);
+
+    return osMemory + usedBlocksMemory;
+});
+
+// 计算内存使用率（百分比）
+const useRate = computed(() => {
+    const totalMemory = systemStatusStore.SystemStatus.memory.totalSize;
+    if (totalMemory === 0) return '0%';
+
+    return `${((usedMemory.value / totalMemory) * 100).toFixed(2)}%`;
+});
 
 // 计算内存块宽度的函数
 const calculateBlockWidth = (length: number, index: number) => {
     const totalSize = systemStatusStore.SystemStatus.memory.totalSize;
-    // 如果是最后一个块，确保填充剩余空间
     if (index === systemStatusStore.SystemStatus.memory.blocks.length - 1) {
         return (length / totalSize) * 100;
     }
