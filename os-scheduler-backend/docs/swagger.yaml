@@ -1,11 +1,22 @@
 basePath: /
 definitions:
+  main.ProcessorStatusResponse:
+    properties:
+      processors:
+        description: 每个处理机当前运行的进程，如果没有则为nil
+        items:
+          $ref: '#/definitions/models.PCB'
+        type: array
+    type: object
   main.Response:
     properties:
-      data: {}
-      error:
-        type: string
+      code:
+        description: 状态码，0表示成功，非0表示错误
+        type: integer
+      data:
+        description: 数据，可以为空
       message:
+        description: 提示信息
         type: string
     type: object
   main.StatusResponse:
@@ -56,6 +67,7 @@ definitions:
         description: -1表示未分配处理机
         type: integer
       requiredTime:
+        description: 剩余运行时间
         type: integer
       state:
         $ref: '#/definitions/models.ProcessState'
@@ -64,6 +76,9 @@ definitions:
         items:
           type: integer
         type: array
+      totalTime:
+        description: 总运行时间
+        type: integer
     type: object
   models.ProcessQueue:
     properties:
@@ -133,9 +148,44 @@ paths:
           schema:
             $ref: '#/definitions/main.Response'
       summary: 添加新进程
+  /processor-status:
+    get:
+      description: 获取所有处理机的当前运行状态，包括每个处理机上正在运行的进程信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取处理机状态成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/main.ProcessorStatusResponse'
+              type: object
+      summary: 获取处理机状态
+  /reset:
+    post:
+      consumes:
+      - application/json
+      description: 强制重启整个系统，清空所有进程和内存。这将终止所有正在运行的进程，释放所有内存分配，并将系统恢复到初始状态。系统参数（如处理机数量、最大进程数）将保持不变。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 系统重置成功
+          schema:
+            $ref: '#/definitions/main.Response'
+        "500":
+          description: 系统重置失败
+          schema:
+            $ref: '#/definitions/main.Response'
+      summary: 重置系统
+      tags:
+      - system
   /resume/{pid}:
     post:
-      description: 恢复指定的挂起进程
+      description: 恢复已挂起的进程，使其重新参与调度
       parameters:
       - description: 进程ID
         in: path
@@ -146,35 +196,49 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 进程恢复成功
+          schema:
+            $ref: '#/definitions/main.Response'
+        "400":
+          description: 进程恢复失败
           schema:
             $ref: '#/definitions/main.Response'
       summary: 恢复进程
   /schedule:
     post:
-      description: 执行一次进程调度
+      description: 执行一次进程调度，更新进程状态和处理机分配
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 调度执行成功
           schema:
-            $ref: '#/definitions/models.ProcessQueue'
+            allOf:
+            - $ref: '#/definitions/main.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ProcessQueue'
+              type: object
       summary: 执行调度
   /status:
     get:
-      description: 获取当前系统中的进程队列和内存状态
+      description: 获取当前系统的状态信息，包括进程队列和内存管理状态
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 获取状态成功
           schema:
-            $ref: '#/definitions/main.StatusResponse'
+            allOf:
+            - $ref: '#/definitions/main.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/main.StatusResponse'
+              type: object
       summary: 获取系统状态
   /suspend/{pid}:
     post:
-      description: 将指定进程挂起
+      description: 将指定进程挂起，暂停其执行
       parameters:
       - description: 进程ID
         in: path
@@ -185,7 +249,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 进程挂起成功
+          schema:
+            $ref: '#/definitions/main.Response'
+        "400":
+          description: 进程挂起失败
           schema:
             $ref: '#/definitions/main.Response'
       summary: 挂起进程

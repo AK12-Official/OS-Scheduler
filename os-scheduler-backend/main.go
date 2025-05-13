@@ -44,7 +44,7 @@ var (
 func main() {
 	// 初始化调度器和内存管理器
 	scheduler = services.NewScheduler(2, 8)              // 2个处理机，最大8个进程
-	memoryManager = services.NewMemoryManager(4096, 128) // 总内存4096，操作系统占128
+	memoryManager = services.NewMemoryManager(4096, 256) // 总内存4096，操作系统占512
 
 	r := gin.Default()
 
@@ -114,6 +114,11 @@ func addProcess(c *gin.Context) {
 	})
 }
 
+// @Summary 获取系统状态
+// @Description 获取当前系统的状态信息，包括进程队列和内存管理状态
+// @Produce json
+// @Success 200 {object} Response{data=StatusResponse} "获取状态成功"
+// @Router /status [get]
 func getStatus(c *gin.Context) {
 	status := StatusResponse{
 		Queue:  scheduler.Queue,
@@ -126,6 +131,11 @@ func getStatus(c *gin.Context) {
 	})
 }
 
+// @Summary 执行调度
+// @Description 执行一次进程调度，更新进程状态和处理机分配
+// @Produce json
+// @Success 200 {object} Response{data=models.ProcessQueue} "调度执行成功"
+// @Router /schedule [post]
 func runSchedule(c *gin.Context) {
 	scheduler.Schedule()
 	c.JSON(http.StatusOK, Response{
@@ -135,6 +145,13 @@ func runSchedule(c *gin.Context) {
 	})
 }
 
+// @Summary 挂起进程
+// @Description 将指定进程挂起，暂停其执行
+// @Produce json
+// @Param pid path int true "进程ID"
+// @Success 200 {object} Response "进程挂起成功"
+// @Failure 400 {object} Response "进程挂起失败"
+// @Router /suspend/{pid} [post]
 func suspendProcess(c *gin.Context) {
 	pid := c.Param("pid")
 	if pid == "" {
@@ -170,6 +187,13 @@ func suspendProcess(c *gin.Context) {
 	})
 }
 
+// @Summary 恢复进程
+// @Description 恢复已挂起的进程，使其重新参与调度
+// @Produce json
+// @Param pid path int true "进程ID"
+// @Success 200 {object} Response "进程恢复成功"
+// @Failure 400 {object} Response "进程恢复失败"
+// @Router /resume/{pid} [post]
 func resumeProcess(c *gin.Context) {
 	pid := c.Param("pid")
 	if pid == "" {
@@ -205,6 +229,11 @@ func resumeProcess(c *gin.Context) {
 	})
 }
 
+// @Summary 获取处理机状态
+// @Description 获取所有处理机的当前运行状态，包括每个处理机上正在运行的进程信息
+// @Produce json
+// @Success 200 {object} Response{data=ProcessorStatusResponse} "获取处理机状态成功"
+// @Router /processor-status [get]
 func getProcessorStatus(c *gin.Context) {
 	processorCount := scheduler.ProcessorCount
 	processors := make([]*models.PCB, processorCount)
@@ -225,9 +254,12 @@ func getProcessorStatus(c *gin.Context) {
 }
 
 // @Summary 重置系统
-// @Description 强制重启整个系统，清空所有进程和内存
+// @Description 强制重启整个系统，清空所有进程和内存。这将终止所有正在运行的进程，释放所有内存分配，并将系统恢复到初始状态。系统参数（如处理机数量、最大进程数）将保持不变。
+// @Tags system
+// @Accept json
 // @Produce json
-// @Success 200 {object} Response
+// @Success 200 {object} Response "系统重置成功"
+// @Failure 500 {object} Response "系统重置失败"
 // @Router /reset [post]
 func resetSystem(c *gin.Context) {
 	// 重新初始化调度器和内存管理器

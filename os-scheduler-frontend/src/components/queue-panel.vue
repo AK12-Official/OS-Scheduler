@@ -22,6 +22,13 @@
                     {{ getProcessType(row) }}
                 </template>
             </el-table-column>
+            <el-table-column label="操作">
+                <template #default="{ row }">
+                    <el-button size="large" type="danger" :icon="Lock" @click="suspendProcess(row.pid)">挂起</el-button>
+                    <el-button size="large" type="success" :icon="Unlock" @click="resumeProcess(row.pid)">解挂</el-button>
+                </template>
+            </el-table-column>
+
         </el-table>
     </el-card>
 </template>
@@ -30,6 +37,7 @@
 import { ref, computed, watch } from 'vue';
 import useSystemStatusStore from '@/store/modules/SystemStatus';
 import type { Process } from '@/types';
+import { Lock, Unlock } from '@element-plus/icons-vue';
 
 const systemStatusStore = useSystemStatusStore();
 const currentQueue = ref('ready');
@@ -73,12 +81,19 @@ const updateProcessArray = () => {
 const getProcessType = (process: Process) => {
     return (!process.predecessors && !process.successors) ? '独立进程' : '同步进程';
 };
+
+const suspendProcess = async (pid: number) => {
+    await systemStatusStore.Suspend(pid);
+};
+
+const resumeProcess = async (pid: number) => {
+    await systemStatusStore.Resume(pid);
+};
 </script>
 
 <style lang="scss" scoped>
 .QueuePanel {
-    height: 80vh;
-    width: 40vw;
+    width: 100vw;
 
     .header {
         margin-bottom: 20px;

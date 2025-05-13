@@ -79,8 +79,7 @@ watch(
 }
 
 .ProcessPanel {
-    width: 40vw;
-    height: 10vh;
+    width: 100vw;
 }
 
 .mainContainer {

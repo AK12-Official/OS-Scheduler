@@ -201,8 +201,7 @@ const SingleMove = async () => {
 }
 
 .ControlPanel {
-    width: 40vw;
-    height: 10vh;
+    width: 100vw;
 }
 
 .button-container {
