@@ -13,9 +13,10 @@ type Scheduler struct {
 	MaxProcesses   int
 	mutex          sync.Mutex
 	nextPID        int
+	memoryManager  *MemoryManager // 添加内存管理器字段
 }
 
-func NewScheduler(processorCount, maxProcesses int) *Scheduler {
+func NewScheduler(processorCount, maxProcesses int, mm *MemoryManager) *Scheduler {
 	return &Scheduler{
 		Queue: &models.ProcessQueue{
 			Ready:     make([]*models.PCB, 0),
@@ -27,6 +28,7 @@ func NewScheduler(processorCount, maxProcesses int) *Scheduler {
 		ProcessorCount: processorCount,
 		MaxProcesses:   maxProcesses,
 		nextPID:        1,
+		memoryManager:  mm, // 初始化内存管理器
 	}
 }
 
@@ -110,6 +112,9 @@ func (s *Scheduler) Schedule() {
 			// 进程完成，移出运行队列
 			s.removeFromRunning(p)
 			p.State = models.Finished
+
+			// 释放内存
+			s.memoryManager.Free(p.MemoryStart)
 
 			// 检查是否有等待此进程完成的其他进程
 			s.checkWaitingProcesses(p.PID)

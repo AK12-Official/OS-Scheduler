@@ -43,8 +43,8 @@ var (
 
 func main() {
 	// 初始化调度器和内存管理器
-	scheduler = services.NewScheduler(2, 8)              // 2个处理机，最大8个进程
-	memoryManager = services.NewMemoryManager(4096, 256) // 总内存4096，操作系统占512
+	memoryManager = services.NewMemoryManager(4096, 256)   // 总内存4096，操作系统占256
+	scheduler = services.NewScheduler(2, 8, memoryManager) // 传入内存管理器
 
 	r := gin.Default()
 
@@ -263,8 +263,8 @@ func getProcessorStatus(c *gin.Context) {
 // @Router /reset [post]
 func resetSystem(c *gin.Context) {
 	// 重新初始化调度器和内存管理器
-	scheduler = services.NewScheduler(scheduler.ProcessorCount, scheduler.MaxProcesses)
-	memoryManager = services.NewMemoryManager(4096, 128)
+	memoryManager = services.NewMemoryManager(4096, 256)   // 保持与 main 函数中相同的参数
+	scheduler = services.NewScheduler(scheduler.ProcessorCount, scheduler.MaxProcesses, memoryManager)
 
 	c.JSON(http.StatusOK, Response{
 		Code:    0,
