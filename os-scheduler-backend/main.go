@@ -28,7 +28,7 @@ type StatusResponse struct {
 
 // ProcessorStatusResponse 表示处理机状态响应
 type ProcessorStatusResponse struct {
-    Processors []*models.PCB `json:"processors"` // 每个处理机当前运行的进程，如果没有则为nil
+	Processors []*models.PCB `json:"processors"` // 每个处理机当前运行的进程，如果没有则为nil
 }
 
 // @title 操作系统调度器 API
@@ -43,7 +43,7 @@ var (
 
 func main() {
 	// 初始化调度器和内存管理器
-	scheduler = services.NewScheduler(2, 5)              // 2个处理机，最大5个进程
+	scheduler = services.NewScheduler(2, 8)              // 2个处理机，最大8个进程
 	memoryManager = services.NewMemoryManager(4096, 128) // 总内存4096，操作系统占128
 
 	r := gin.Default()
@@ -67,7 +67,7 @@ func main() {
 	r.POST("/suspend/:pid", suspendProcess)
 	r.POST("/resume/:pid", resumeProcess)
 	r.GET("/processor-status", getProcessorStatus)
-	r.POST("/reset", resetSystem)  // 添加重置系统的路由
+	r.POST("/reset", resetSystem) // 添加重置系统的路由
 
 	// 添加 swagger 路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -206,22 +206,22 @@ func resumeProcess(c *gin.Context) {
 }
 
 func getProcessorStatus(c *gin.Context) {
-    processorCount := scheduler.ProcessorCount
-    processors := make([]*models.PCB, processorCount)
+	processorCount := scheduler.ProcessorCount
+	processors := make([]*models.PCB, processorCount)
 
-    for _, p := range scheduler.Queue.Running {
-        if p.ProcessorID >= 0 && p.ProcessorID < processorCount {
-            processors[p.ProcessorID] = p
-        }
-    }
+	for _, p := range scheduler.Queue.Running {
+		if p.ProcessorID >= 0 && p.ProcessorID < processorCount {
+			processors[p.ProcessorID] = p
+		}
+	}
 
-    c.JSON(http.StatusOK, Response{
-        Code:    0,
-        Message: "获取处理机状态成功",
-        Data: ProcessorStatusResponse{
-            Processors: processors,
-        },
-    })
+	c.JSON(http.StatusOK, Response{
+		Code:    0,
+		Message: "获取处理机状态成功",
+		Data: ProcessorStatusResponse{
+			Processors: processors,
+		},
+	})
 }
 
 // @Summary 重置系统
@@ -230,13 +230,13 @@ func getProcessorStatus(c *gin.Context) {
 // @Success 200 {object} Response
 // @Router /reset [post]
 func resetSystem(c *gin.Context) {
-    // 重新初始化调度器和内存管理器
-    scheduler = services.NewScheduler(scheduler.ProcessorCount, scheduler.MaxProcesses)
-    memoryManager = services.NewMemoryManager(4096, 128)
+	// 重新初始化调度器和内存管理器
+	scheduler = services.NewScheduler(scheduler.ProcessorCount, scheduler.MaxProcesses)
+	memoryManager = services.NewMemoryManager(4096, 128)
 
-    c.JSON(http.StatusOK, Response{
-        Code:    0,
-        Message: "系统已重置",
-        Data:    nil,
-    })
+	c.JSON(http.StatusOK, Response{
+		Code:    0,
+		Message: "系统已重置",
+		Data:    nil,
+	})
 }

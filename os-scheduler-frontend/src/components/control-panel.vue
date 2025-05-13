@@ -7,7 +7,7 @@
         <div class="button-container">
             <el-button type="primary" size="large" @click="showCreateDialog()">新建进程</el-button>
             <el-button type="primary" size="large">新建随机进程</el-button>
-            <el-button type="primary" size="large">单步执行</el-button>
+            <el-button type="primary" size="large" @click="SingleMove()">单步执行</el-button>
             <el-button type="primary" size="large">自动执行</el-button>
             <el-button type="danger" size="large" @click="reset()">重置系统</el-button>
         </div>
@@ -183,6 +183,10 @@ const CreatNew = async () => {
 const reset = async () => {
     console.log('重置系统');
     await systemStatusStore.reset();
+};
+
+const SingleMove = async () => {
+    await systemStatusStore.Schedule();
 };
 </script>
 

@@ -63,6 +63,7 @@ const useSystemStatusStore = defineStore('SystemStatus', () => {
             ElMessage.success(res.message);
             time.value++;
             await getSystemStatus();
+            await getProcessor();
         } else {
             ElNotification({
                 type: 'error',

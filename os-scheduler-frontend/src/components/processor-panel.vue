@@ -27,7 +27,7 @@
 
 <script lang="ts" setup>
 import useSystemStatusStore from '@/store/modules/SystemStatus';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { View } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
@@ -56,6 +56,16 @@ const currentCPUProcess = computed(() => {
     const cpu = currentCPUIndex.value === 0 ? CPU0.value : CPU1.value;
     return cpu;
 });
+
+// 监视处理器状态的变化
+watch(
+    () => systemStatusStore.ProcessorsStatus,
+    () => {
+        // CPU状态会自动通过计算属性更新
+        console.log('处理器状态更新');
+    },
+    { deep: true }
+);
 </script>
 
 <style lang="scss" scoped>
